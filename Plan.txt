@@ -1,0 +1,7 @@
+TO do:
+Decide if docstring method is worth it. (Reply to brett/mnfy author)
+Look into coverage.py
+Look into provided test cases
+Begin 2.x implementation
+
+
