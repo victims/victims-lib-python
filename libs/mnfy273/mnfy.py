@@ -298,12 +298,6 @@ class SourceCode(ast.NodeVisitor):
     def visit_Str(self, node):
         self._write(repr(node.s))
 
-    def visit_Bytes(self, node):
-        self._write(repr(node.s))
-
-    def visit_Starred(self, node):
-        self._visit_and_write('*', node.value)
-
     def visit_Dict(self, node):
         """
         {1: 1, 2: 2}
@@ -625,10 +619,15 @@ class SourceCode(ast.NodeVisitor):
             else:
                 self.visit(node.value)
 
-    def visit_YieldFrom(self, node):
-        # Python 3.3.0 claims 'value' is optional, but grammar prevents that.
-        self._visit_and_write('yield from ', node.value)
-
+	def visit_Repr(self,node):
+	"""
+	This might not get called. It appears in the asdl for py2.7. but doesn't
+	seem to appear in the ASTs.
+	"""
+		self._write('repr(')
+		self.visit(node.value)
+		self._write('repr)')
+				
     def _global_nonlocal_visit(self, node):
         """
         <name> X, Y
@@ -643,8 +642,8 @@ class SourceCode(ast.NodeVisitor):
         self._global_nonlocal_visit(node)
 
     # Not ``visit_Nonlocal = global_nonlocal_visit`` for benefit of decorators.
-    def visit_Nonlocal(self, node):
-        self._global_nonlocal_visit(node)
+    #def visit_Nonlocal(self, node):
+    #    self._global_nonlocal_visit(node)
 
     def visit_Import(self, node):
         """
@@ -669,6 +668,19 @@ class SourceCode(ast.NodeVisitor):
         self._write(' import ')
         self._seq_visit(node.names, ',')
 
+    def visit_Exec(self,node):	
+	"""Not sure if the if statement is neccessary, I don't think locals can
+	exist without globals. But just in case"""
+	
+	    self._write('exec');
+		self.visit(node.body)
+		self._conditional_visit(' in ', node.globals)
+		if node.globals:
+			self._conditional_visit(',',node.locals)
+		else:
+			self._conditional_visit(' in ', node.locals)
+		
+		
     def _BoolOp_precedence(self, node):
         return node.op
 
@@ -771,7 +783,7 @@ class SourceCode(ast.NodeVisitor):
         self._write(':')
         self._visit_body(node.body)
 
-    def visit_Try(self, node):
+    def visit_TryExcept(self, node):
         self._indent()
         self._write('try:')
         self._visit_body(node.body)
@@ -781,7 +793,12 @@ class SourceCode(ast.NodeVisitor):
             self._indent()
             self._write('else:')
             self._visit_body(node.orelse)
-        if node.finalbody:
+		
+	def visit_TryFinally(self,node):	
+		self._indent()
+        self._write('try:')
+        self._visit_body(node.body)
+		if node.finalbody:
             self._indent()
             self._write('finally:')
             self._visit_body(node.finalbody)
@@ -880,6 +897,9 @@ class CombineImports(ast.NodeTransformer):
             return node
         self._last_stmt.names.extend(node.names)
         return None
+		
+	
+		
 
 
 class CombineWithStatements(ast.NodeTransformer):
@@ -918,7 +938,7 @@ class EliminateUnusedConstants(ast.NodeTransformer):
 
     """
 
-    constants = ast.Num, ast.Str, ast.Bytes
+    constants = ast.Num, ast.Str
 
     def visit_Expr(self, node):
         """Return None if the Expr contains a side-effect-free constant."""
