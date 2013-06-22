@@ -31,7 +31,7 @@ _simple_nodes = {
 }
 
 _simple_stmts = (ast.Expr, ast.Delete, ast.Pass, ast.Import, ast.ImportFrom,
-                ast.Global, ast.Nonlocal, ast.Assert, ast.Break, ast.Continue,
+                ast.Global, ast.Assert, ast.Break, ast.Continue,
                 ast.Return, ast.Raise, ast.Assign, ast.AugAssign, ast.Print)
 
 _precedence = {expr: level for level, expr_list in enumerate([
@@ -88,7 +88,7 @@ class SourceCode(ast.NodeVisitor):
     # Some node types which are lacking any fields are purposefully skipped.
 
     def __init__(self):
-        super().__init__()
+        ast.NodeVisitor.__init__(self)
         self._buffer = []
         self._indent_level = 0
 
@@ -157,7 +157,7 @@ class SourceCode(ast.NodeVisitor):
                             lambda x: x)
         return _precedence.get(work_with(node).__class__, None)
 
-    def _visit_expr(self, node, scope, *, break_tie=False):
+    def _visit_expr(self, node, scope, break_tie=False):
         """Visit a node, adding parentheses as needed for proper precedence.
 
         If break_tie is True then add parentheses for 'node' even when
@@ -173,7 +173,7 @@ class SourceCode(ast.NodeVisitor):
         else:
             self.visit(node)
 
-    def _visit_body(self, body, *, indent=True):
+    def _visit_body(self, body, indent=True):
         """Visit the list of statements that represent the body of a block
         statement.
 
@@ -321,7 +321,7 @@ class SourceCode(ast.NodeVisitor):
         self._seq_visit(node.elts, ',')
         self._write('}')
 
-    def visit_Tuple(self, node, *, parens=True):
+    def visit_Tuple(self, node,parens=True):
         """
         (1, 2, 3)
         (1,2,3)
@@ -431,7 +431,7 @@ class SourceCode(ast.NodeVisitor):
 		
     def visit_Raise(self, node):
         self._write('raise')
-		self._conditional_visit(' ', node.type)
+        self._conditional_visit(' ', node.type)
         self._conditional_visit(',', node.inst)
         self._conditional_visit(',', node.tback)
 
@@ -570,15 +570,15 @@ class SourceCode(ast.NodeVisitor):
 		#handle (argument ',')* (argument [','])
         self._write_args(node.args, node.defaults)
         #handle *name
-		if node.vararg:
-			self._write('*')
-			self._write(node.vararg)
-			#How do i know what vararg args* are??
-		#handle **name
-		if node.kwarg:
-			self._write('**')
-			self._write(node.kwarg)
-		
+        if node.vararg:
+        	self._write('*')
+        	self._write(node.vararg)
+        	#How do i know what vararg args* are??
+        #handle **name
+        if node.kwarg:
+        	self._write('**')
+        	self._write(node.kwarg)
+
 
     def visit_Lambda(self, node):
         """
@@ -619,14 +619,14 @@ class SourceCode(ast.NodeVisitor):
             else:
                 self.visit(node.value)
 
-	def visit_Repr(self,node):
-	"""
-	This might not get called. It appears in the asdl for py2.7. but doesn't
-	seem to appear in the ASTs.
-	"""
-		self._write('repr(')
-		self.visit(node.value)
-		self._write('repr)')
+    def visit_Repr(self,node):
+        """
+        This might not get called. It appears in the asdl for py2.7. but doesn't
+        seem to appear in the ASTs.
+        """
+        self._write('repr(')
+        self.visit(node.value)
+        self._write('repr)')
 				
     def _global_nonlocal_visit(self, node):
         """
@@ -669,16 +669,16 @@ class SourceCode(ast.NodeVisitor):
         self._seq_visit(node.names, ',')
 
     def visit_Exec(self,node):	
-	"""Not sure if the if statement is neccessary, I don't think locals can
-	exist without globals. But just in case"""
+    	"""Not sure if the if statement is neccessary, I don't think locals can
+    	exist without globals. But just in case"""
 	
-	    self._write('exec');
-		self.visit(node.body)
-		self._conditional_visit(' in ', node.globals)
-		if node.globals:
-			self._conditional_visit(',',node.locals)
-		else:
-			self._conditional_visit(' in ', node.locals)
+        self._write('exec');
+        self.visit(node.body)
+        self._conditional_visit(' in ', node.globals)
+        if node.globals:
+            self._conditional_visit(',',node.locals)
+        else:
+            self._conditional_visit(' in ', node.locals)
 		
 		
     def _BoolOp_precedence(self, node):
@@ -695,7 +695,7 @@ class SourceCode(ast.NodeVisitor):
             self._write(op)
             self._visit_expr(value, node, break_tie=True)
 
-    def visit_If(self, node, *, elif_=False):
+    def visit_If(self, node, elif_=False):
         """
         if X:
             if Y:
@@ -765,7 +765,7 @@ class SourceCode(ast.NodeVisitor):
         #self._seq_visit(node.items, ',')
         self.visit(node.context_expr)
         self._conditional_visit(' as ', node.optional_vars)
-		self._write(':')
+        self._write(':')
         self._visit_body(node.body)
 
         
@@ -798,7 +798,7 @@ class SourceCode(ast.NodeVisitor):
 		self._indent()
         self._write('try:')
         self._visit_body(node.body)
-		if node.finalbody:
+        if node.finalbody:
             self._indent()
             self._write('finally:')
             self._visit_body(node.finalbody)
@@ -866,10 +866,10 @@ class CombineImports(ast.NodeTransformer):
 
     def __init__(self):
         self._last_stmt = None
-        super().__init__()
+        ast.NodeTransformer.__init__(self)
 
     def visit(self, node):
-        node = super().visit(node)
+        node = ast.NodeTransformer.visit(self,node)
         if node is not None and isinstance(node, ast.stmt):
             self._last_stmt = node
         return node
@@ -965,10 +965,12 @@ class EliminateUnusedConstants(ast.NodeTransformer):
     visit_With = _visit_body
     visit_ExceptHandler = _visit_body
 
-    def visit_Try(self, node):
-        """Keep 'except' clauses as they suppress exceptions, but remove any
-        other clauses that end up being empty."""
-        if len(node.handlers) > 0:
+    
+    def visit_TryExcept(self, node):
+        #"""Keep 'except' clauses as they suppress exceptions, but remove any
+        #other clauses that end up being empty."""
+	""" Try replace ment not ported yet.    
+		if len(node.handlers) > 0:
             node = self._visit_body(node)
         else:
             node = self.generic_visit(node)
@@ -981,7 +983,8 @@ class EliminateUnusedConstants(ast.NodeTransformer):
         if all(len(getattr(node, x)) == 0 for x in ast.Try._fields):
             return None
         return node
-
+    """
+        return node
 
 class IntegerToPower(ast.NodeTransformer):
 

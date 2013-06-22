@@ -8,9 +8,6 @@ def normalisePy(filepath):
 	This module uses the 'mnfy' module to create a semantically equivalent
 	and minimised/normalised python source file ready for hashing.
 	
-	The mnfy module works only for python 3.3, it will be modified to work
-	for 2.x but not yet.
-	
 	Input::
 		filepath - path/to/sourcefile.py to be normalised.
 	
@@ -32,10 +29,16 @@ def normalisePy(filepath):
 		minifier = SourceCode()
 		minifier.visit(source_ast)			
 	elif sys.version_info.major == 2:
-		#to be implemented.
-		raise NotImplementedError("Python 2.x not implemented yet")
-
-	
+		from libs.mnfy273.mnfy import SourceCode,safe_transforms
+		with open(filepath, 'rb') as source_file:
+			source = source_file.read()
+		source_ast = ast.parse(source)
+		#safe_transforms
+		for transform in safe_transforms:
+			transformer = transform()
+			source_ast = transformer.visit(source_ast)
+		minifier = SourceCode()
+		minifier.visit(source_ast)			
 	#Final source file
 	return (str(minifier))
 
@@ -105,6 +108,7 @@ def main():
 		if sys.version_info.minor >= 3:
 			testDir = testDir + "/" + "3.x tests"
 		else:
+			print ("Python version found: ", sys.version_info.major,".", sys.version_info.minor)
 			print("Python version >= 3.3 or Python 2.7 required to run, input files do not need to be under this requirement")
 			return -1;
 	elif sys.version_info.major == 2:
