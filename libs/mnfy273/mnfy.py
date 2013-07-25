@@ -627,6 +627,7 @@ class SourceCode(ast.NodeVisitor):
         """
         This might not get called. It appears in the asdl for py2.7. but doesn't
         seem to appear in the ASTs.
+		Repr is just treated as a function call.. 
         """
         self._write('repr(')
         self.visit(node.value)
@@ -676,7 +677,7 @@ class SourceCode(ast.NodeVisitor):
     	"""Not sure if the if statement is neccessary, I don't think locals can
     	exist without globals. But just in case"""
 	
-        self._write('exec');
+        self._write('exec ');
         self.visit(node.body)
         self._conditional_visit(' in ', node.globals)
         if node.globals:
@@ -1045,8 +1046,8 @@ class FunctionToLambda(ast.NodeTransformer):
             return node
         args = node.args
         # No annotations on any other parameters.
-        if any(arg.annotation for arg in args.args):
-            return node
+        #if any(arg.annotation for arg in args.args):
+        #    return node
         # In the clear!
         return_ = node.body[0].value
         if return_ is None:

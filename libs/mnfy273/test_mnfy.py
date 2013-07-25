@@ -157,7 +157,37 @@ class SourceCodeEmissionTests(unittest.TestCase):
         self.verify(ast.Delete([ast.Name('X', ast.Del()), ast.Name('Y',
                                 ast.Del())]),
                     'del X,Y')
-
+    def test_Exec(self):
+        #Exec::== exec <expr> in <global>, <local>
+        glob = ast.Dict([],[])
+        loc = ast.Dict([],[])
+        #exec X
+        self.verify(ast.Exec(ast.Name('X',ast.Load()),None,None), 'exec X')
+        #exec X in {}
+        self.verify(ast.Exec(ast.Name('X',ast.Load()),glob,None), 'exec X in {}')
+        #exec X in {},{}
+        self.verify(ast.Exec(ast.Name('X',ast.Load()),glob,loc), 'exec X in {},{}')
+		
+					
+    def test_Print(self):
+        #destination
+        dest = ast.Attribute(ast.Name('sys', ast.Load()),'stderr',ast.Load())
+		#print >> sys.stderr
+        self.verify(ast.Print(dest,[],True),'print >>sys.stderr')
+        #print >> sys.stderr, X
+        self.verify(ast.Print(dest,[ast.Name('X',ast.Load())],True),'print >>sys.stderr,X')
+        #print >> sys.stderr, X,
+        self.verify(ast.Print(dest,[ast.Name('X',ast.Load())],False),'print >>sys.stderr,X,')
+        #print
+        self.verify(ast.Print(None,[],True),'print')
+        #print X
+        self.verify(ast.Print(None,[ast.Name('X',ast.Load())],True),'print X')
+        #print X,
+        self.verify(ast.Print(None,[ast.Name('X',ast.Load())],False),'print X,')        
+        #print X,Y
+        self.verify(ast.Print(None,[ast.Name('X', ast.Load()), ast.Name('Y',
+                                ast.Load())],True), 'print X,Y')
+        #print >> sys.stderr								
     def test_Call(self):
         name = ast.Name('spam', ast.Load())
         args = ([ast.Num(42)], '42'), ([], None)
@@ -274,21 +304,13 @@ class SourceCodeEmissionTests(unittest.TestCase):
         sub.slice = ast.ExtSlice([slice1, slice2])
         self.verify(sub, 'X[42,::2]')
 
-    def create_arguments(self, args=[], vararg=None, varargannotation=None,
-            kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[],
-            kw_defaults=[None]):
+    def create_arguments(self, args=[], vararg=None, kwarg=None, defaults=[]):
         """	
         args = [ast.arg(x, None) for x in args]
-        kwonlyargs = [ast.arg(x, None) for x in kwonlyargs]
-        return ast.arguments(args, vararg, varargannotation, kwonlyargs,
-                                kwarg, kwargannotation, defaults, kw_defaults)
+        return ast.arguments(args, vararg, kwarg, , defaults)
         """
         args = [ast.Name(x, ast.Store()) for x in args]
         return ast.arguments(args, vararg,kwarg,defaults)
-		
-    #def test_arg(self):
-    #    self.verify(ast.arg('spam', None), 'spam')
-    #    self.verify(ast.arg('spam', ast.Num(42)), 'spam:42')
 
     def test_arguments(self):
         self.verify(self.create_arguments(args=['spam']), 'spam')
@@ -304,29 +326,11 @@ class SourceCodeEmissionTests(unittest.TestCase):
                         defaults=[ast.Num(42)]),
                     'spam,eggs=42')
         self.verify(self.create_arguments(vararg='spam'), '*spam')
-        #self.verify(self.create_arguments(vararg='spam',
-        #                varargannotation=ast.Num(42)),
-        #            '*spam:42')
-        #self.verify(self.create_arguments(kwonlyargs=['spam']),
-        #            '*,spam')
-        #self.verify(self.create_arguments(kwonlyargs=['spam'],
-        #               kw_defaults=[ast.Num(42)]),
-        #           '*,spam=42')
-        #self.verify(self.create_arguments(args=['spam'], kwonlyargs=['eggs']),
-        #            'spam,*,eggs')
-        #self.verify(self.create_arguments(vararg='spam', kwonlyargs=['eggs']),
-        #            '*spam,eggs')
         self.verify(self.create_arguments(kwarg='spam'), '**spam')
         self.verify(self.create_arguments(args=['spam'], vararg='eggs'),
                     'spam,*eggs')
-        #self.verify(self.create_arguments(args=['spam'], vararg='eggs',
-        #                                  kwonlyargs=['bacon']),
-        #            'spam,*eggs,bacon')
         self.verify(self.create_arguments(args=['spam'], kwarg='eggs'),
                     'spam,**eggs')
-        #self.verify(self.create_arguments(kwonlyargs=['spam', 'eggs', 'bacon'],
-        #                                  kw_defaults=[None, ast.Num(42), None]),
-        #            '*,spam,eggs=42,bacon')
 
     def test_Lambda(self):
         self.verify(ast.Lambda(self.create_arguments(), ast.Num(42)),
@@ -450,28 +454,14 @@ class SourceCodeEmissionTests(unittest.TestCase):
         self.verify(while_, 'while True:pass\nelse:pass')
 
     def test_With(self):
-        """
         # with A: pass
         A = ast.Name('A', ast.Load())
-        A_clause = ast.withitem(A, None)
-        with_A = ast.With([A_clause], [ast.Pass()])
+        with_A = ast.With(A,None, [ast.Pass()])
         self.verify(with_A, 'with A:pass')
         # with A as a: pass
         a = ast.Name('a', ast.Store())
-        a_clause = ast.withitem(A, a)
-        with_a = ast.With([a_clause], [ast.Pass()])
+        with_a = ast.With(A,a, [ast.Pass()])
         self.verify(with_a, 'with A as a:pass')
-        # with A as A, B: pass
-        B = ast.Name('B', ast.Load())
-        B_clause = ast.withitem(B, None)
-        with_B = ast.With([a_clause, B_clause], [ast.Pass()])
-        self.verify(with_B, 'with A as a,B:pass')
-        # with A as A, B as b: pass
-        b = ast.Name('b', ast.Store())
-        b_clause = ast.withitem(B, b)
-        with_b = ast.With([a_clause, b_clause], [ast.Pass()])
-        self.verify(with_b, 'with A as a,B as b:pass')
-        """
 		
     def test_ExceptHandler(self):
         except_ = ast.ExceptHandler(None, None, [ast.Pass()])
@@ -530,12 +520,6 @@ class SourceCodeEmissionTests(unittest.TestCase):
                 [ast.Name('dec1', ast.Load()), ast.Name('dec2', ast.Load()),
                     ast.Name('dec3', ast.Load())])
         self.verify(decorated, '@dec1\n@dec2\n@dec3\ndef X():pass')
-        # Return annotation
-        """
-        annotated = ast.FunctionDef('X', self.create_arguments(), [ast.Pass()],
-                [], ast.Num(42))
-        self.verify(annotated, 'def X()->42:pass')
-        """
 
     def test_ClassDef(self):
         #3.3:: name,bases,kw,starargs,kwargs,body,dec_list
@@ -546,26 +530,9 @@ class SourceCodeEmissionTests(unittest.TestCase):
         # class X(Y): pass
         cls = ast.ClassDef('X', [ast.Name('Y', ast.Load())],[ast.Pass()], [])
         self.verify(cls, 'class X(Y):pass')
-        # class X(Y=42): pass
-        #cls = ast.ClassDef('X', [], [ast.Pass()], [])
-        #self.verify(cls, 'class X(Y=42):pass')
         # class X(Z, Y=42): pass ---> Changed to: X(Y,Z)
         cls.bases.append(ast.Name('Z', ast.Load()))
         self.verify(cls, 'class X(Y,Z):pass')
-        # class X(*args): pass
-        #cls = ast.ClassDef('X', [], [], ast.Name('args', ast.Load()), None,
-        #        [ast.Pass()], [])
-        #self.verify(cls, 'class X(*args):pass')
-        # class X(Y, *args): pass
-        #cls.bases.append(ast.Name('Y', ast.Load()))
-        #self.verify(cls, 'class X(Y,*args):pass')
-        # class X(**kwargs): pass
-        #cls = ast.ClassDef('X', [], [], None, ast.Name('kwargs', ast.Load()),
-        #        [ast.Pass()], [])
-        #self.verify(cls, 'class X(**kwargs):pass')
-        # class X(Y, **kwargs): pass
-        #cls.bases.append(ast.Name('Y', ast.Load()))
-        #self.verify(cls, 'class X(Y,**kwargs):pass')
         # Decorators
         cls = ast.ClassDef('X', [], [ast.Pass()],[ast.Name('dec1', ast.Load()),
                                 ast.Name('dec2', ast.Load())])
@@ -769,41 +736,6 @@ class CombineImportsTests(unittest.TestCase):
         self.assertEqual(len(module.body), 5)
 
 
-class CombineWithStatementsTests(unittest.TestCase):
-
-    """with A:
-         with B:
-            pass
-
-       with A,B:pass
-    
-
-    A = ast.Name('A', ast.Load())
-    A_clause = ast.withitem(A, None)
-    B = ast.Name('B', ast.Load())
-    B_clause = ast.withitem(B, None)
-    C = ast.Name('C', ast.Load())
-    C_clause = ast.withitem(C, None)
-	
-
-    def setUp(self):
-        self.transform = mnfy.CombineWithStatements()
-
-    def test_deeply_nested(self):
-        with_C = ast.With([self.C_clause], [ast.Pass()])
-        with_B = ast.With([self.B_clause], [with_C])
-        with_A = ast.With([self.A_clause], [with_B])
-        new_ast = self.transform.visit(with_A)
-        expect = ast.With([self.A_clause, self.B_clause, self.C_clause],
-                          [ast.Pass()])
-        self.assertEqual(ast.dump(new_ast), ast.dump(expect))
-
-    def test_no_optimization(self):
-        with_B = ast.With([self.B_clause], [ast.Pass()])
-        with_A = ast.With([self.A_clause], [with_B, ast.Pass()])
-        new_ast = self.transform.visit(with_A)
-        self.assertEqual(new_ast, with_A)
-	"""
 	
 class UnusedConstantEliminationTests(TransformTest):
 
@@ -927,23 +859,12 @@ class FunctionToLambdaTests(unittest.TestCase):
     def test_decorator_fail(self):
         self._test_failure('@dec\ndef X(): return')
 
-    #def test_returns_annotation_fail(self):
-    #    self._test_failure('def X()->None: return')
 
     def test_body_too_long_fail(self):
         self._test_failure('def X(): x = 2 + 3; return x')
 
     def test_body_not_return_fail(self):
         self._test_failure('def X(): Y()')
-
-    #def test_no_vararg_annotation_fail(self):
-    #    self._test_failure('def X(*arg:None): return')
-
-    #def test_no_kwarg_annotation_fail(self):
-    #    self._test_failure('def X(**kwargs:None): return')
-
-    #def test_no_arg_annotation_fail(self):
-    #    self._test_failure('def X(a, b:None, c): return')
 
     def test_success(self):
         module = ast.parse('def identity(): return 42')
