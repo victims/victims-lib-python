@@ -39,10 +39,11 @@ class SourceCodeEmissionTests(unittest.TestCase):
         self.verify(ast.Num(given), expect)
 
     def test_Num_integers(self):
-        for num in (42, -13, 1.79769313486231e+308, 1.3, 10**12+0.5):
+        for num in (42, -13, 1.79769313486e+308, 1.3, 10**10+0.5):
             self.verify_num(num, repr(num))
-        for num in (10**12+1, -10**12-1):
+        for num in (10**10+1, -10**10-1):
             self.verify_num(num, hex(num))
+
 
     def test_Num_floats(self):
         self.verify_num(1.0, '1.')
@@ -343,11 +344,13 @@ class SourceCodeEmissionTests(unittest.TestCase):
         self.verify(ast.Continue(), 'continue')
 
     def test_Raise(self):
-        self.verify(ast.Raise(None, None), 'raise')
-        self.verify(ast.Raise(ast.Name('X', ast.Load()), None), 'raise X')
+        self.verify(ast.Raise(None, None,None), 'raise')
+        self.verify(ast.Raise(ast.Name('X', ast.Load()), None, None), 'raise X')
         raise_ast = ast.Raise(ast.Name('X', ast.Load()),
-                                ast.Name('Y', ast.Load()))
-        self.verify(raise_ast, 'raise X from Y')
+                                ast.Name('Y', ast.Load()),None)
+        self.verify(raise_ast, 'raise X,Y')
+        raise_traceback = ast.Raise(ast.Name('E', ast.Load()),ast.Name('V', ast.Load()),ast.Name('T', ast.Load()))
+        self.verify(raise_traceback, 'raise E,V,T')
 
     def test_Return(self):
         self.verify(ast.Return(None), 'return')
@@ -478,36 +481,23 @@ class SourceCodeEmissionTests(unittest.TestCase):
         except_.name = ast.Name('exc', ast.Store())
         self.verify(except_, 'except Exception as exc:pass')
 
-    def test_Try(self):
+    def test_TryExcept(self):
         # except
         exc_clause = ast.ExceptHandler(ast.Name('X', ast.Load()), None,
                                         [ast.Pass()])
         exc_clause_2 = ast.ExceptHandler(None, None, [ast.Pass()])
-        try_except = ast.Try([ast.Pass()], [exc_clause, exc_clause_2], None, None)
+        try_except = ast.TryExcept([ast.Pass()], [exc_clause, exc_clause_2], None)
         self.verify(try_except, 'try:pass\nexcept X:pass\nexcept:pass')
         # except/else
-        try_except_else = ast.Try([ast.Pass()], [exc_clause, exc_clause_2],
-                                  [ast.Pass()], None)
+        try_except_else = ast.TryExcept([ast.Pass()], [exc_clause, exc_clause_2],
+                                  [ast.Pass()])
         self.verify(try_except_else,
                     'try:pass\nexcept X:pass\nexcept:pass\nelse:pass')
-        # except/finally
-        exc_clause = ast.ExceptHandler(None, None, [ast.Pass()])
-        try_except_finally = ast.Try([ast.Pass()], [exc_clause_2], None,
-                                     [ast.Pass()])
-        self.verify(try_except_finally, 'try:pass\nexcept:pass\nfinally:pass')
-        # except/else/finally
-        try_except_else_finally = ast.Try([ast.Pass()], [exc_clause_2],
-                                          [ast.Pass()], [ast.Pass()])
-        self.verify(try_except_else_finally,
-                    'try:pass\nexcept:pass\nelse:pass\nfinally:pass')
-        # else/finally
-        try_else_finally = ast.Try([ast.Pass()], None, [ast.Pass()],
-                                   [ast.Pass()])
-        self.verify(try_else_finally, 'try:pass\nelse:pass\nfinally:pass')
+        
+    def test_TryFinally(self):	
         # finally
-        try_finally = ast.Try([ast.Pass()], None, None, [ast.Pass()])
+        try_finally = ast.TryFinally([ast.Pass()], [ast.Pass()])
         self.verify(try_finally, 'try:pass\nfinally:pass')
-
     def test_AugAssign(self):
         for cls, op in self.operators.items():
             aug_assign = ast.AugAssign(ast.Name('X', ast.Store()), cls(),
@@ -594,7 +584,7 @@ class SourceCodeEmissionTests(unittest.TestCase):
                     (ast.Assign([ast.Name('X', ast.Store())], ast.Num(42)),
                         'X=42'),
                     (ast.Delete([ast.Name('X', ast.Del())]), 'del X'),
-                    (ast.Raise(None, None), 'raise'),
+                    (ast.Raise(None, None, None), 'raise'),
                     (ast.Return(None), 'return'),
                     (ast.AugAssign(ast.Name('X', ast.Store()), ast.Add(),
                         ast.Num(42)), 'X+=42'),
@@ -651,7 +641,7 @@ class SourceCodeEmissionTests(unittest.TestCase):
             if minified.n != original.n:
                 raise ValueError(cls.format_ast_compare_failure(
                     'Unequal numbers', minified, original))
-        elif isinstance(minified, (ast.Str, ast.Bytes)):
+        elif isinstance(minified, ast.Str):
             assert minified.s == original.s
         elif isinstance(minified, ast.Attribute):
             assert minified.attr == original.attr
@@ -662,7 +652,7 @@ class SourceCodeEmissionTests(unittest.TestCase):
         elif isinstance(minified, ast.arguments):
             assert minified.vararg == original.vararg
             assert minified.kwarg == original.kwarg
-        elif isinstance(minified, (ast.arg, ast.keyword)):
+        elif isinstance(minified, ast.keyword):
             assert minified.arg == original.arg
         elif isinstance(minified, ast.alias):
             assert minified.name == original.name
@@ -827,9 +817,8 @@ class UnusedConstantEliminationTests(TransformTest):
     def test_unused_constants(self):
         number = ast.Num(1)
         string = ast.Str('A')
-        bytes_ = ast.Bytes(b'A')
         module = ast.Module([ast.Expr(expr)
-                                for expr in (number, string, bytes_)])
+                                for expr in (number, string)])
         new_ast = self.transform.visit(module)
         self.assertFalse(new_ast.body)
 
@@ -844,11 +833,11 @@ class UnusedConstantEliminationTests(TransformTest):
         return new_ast
 
     def test_empty_FunctionDef(self):
-        function = ast.FunctionDef('X', ast.arguments(), [], [], None)
+        function = ast.FunctionDef('X', ast.arguments(), [], [])
         self._test_empty_body(function)
 
     def test_empty_ClassDef(self):
-        cls = ast.ClassDef('X', [], [], None, None, [], None)
+        cls = ast.ClassDef('X', [], [], None)
         self._test_empty_body(cls)
 
     def test_empty_For(self):
@@ -879,24 +868,23 @@ class UnusedConstantEliminationTests(TransformTest):
         self.check_transform(if_else, expect)
 
     def test_empty_With(self):
-        with_ = ast.With([ast.Name('X', ast.Load())], [])
+        with_ = ast.With(ast.Name('X', ast.Load()),[], [])
         self._test_empty_body(with_)
 
     def test_empty_Try(self):
+		#NOTE:: THESE TESTS MIGHT NOT BE ACCURATE NO LONGER IN MNFY2.7
         # try/except
         exc_clause = ast.ExceptHandler(None, None,
                                         [ast.Expr(ast.Str('dead code'))])
-        try_exc = ast.Try([ast.Pass()], [exc_clause], [], [])
-        expect = ast.Try([ast.Pass()],
-                         [ast.ExceptHandler(None, None, [ast.Pass()])], [], [])
+        try_exc = ast.TryExcept([ast.Pass()], [exc_clause], [])
+        expect = ast.TryExcept([ast.Pass()],
+                         [ast.ExceptHandler(None, None, [ast.Pass()])],[])
         self.check_transform(try_exc, expect)
         # try/finally should be eliminated
-        try_finally = ast.Try([ast.Pass()], [], [],
-                              [ast.Expr(ast.Str('dead code'))])
+        try_finally = ast.TryFinally([ast.Pass()],[ast.Expr(ast.Str('dead code'))])
         self.check_transform(try_finally, None)
         # try/else should be eliminated
-        try_else = ast.Try([ast.Pass()], [], [ast.Expr(ast.Str('dead_code'))],
-                           [])
+        try_else = ast.TryExcept([ast.Pass()], [], [ast.Expr(ast.Str('dead_code'))])
         self.check_transform(try_else, None)
 
 

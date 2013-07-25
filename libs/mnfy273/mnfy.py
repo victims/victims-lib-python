@@ -232,7 +232,7 @@ class SourceCode(ast.NodeVisitor):
             return node
 
     def _write_int(self, num):
-        if abs(num) >= 10**12:
+        if abs(num) >= 10**10:
             num_str = hex(num)
         else:
             num_str = str(num)
@@ -288,7 +288,7 @@ class SourceCode(ast.NodeVisitor):
 
     def visit_Num(self, node):
         num = node.n
-        if isinstance(num, int):
+        if isinstance(num, int) or isinstance(num,long):
             self._write_int(num)
         elif isinstance(num, float):
             self._write_float(num)
@@ -798,8 +798,8 @@ class SourceCode(ast.NodeVisitor):
             self._write('else:')
             self._visit_body(node.orelse)
 		
-	def visit_TryFinally(self,node):	
-		self._indent()
+    def visit_TryFinally(self,node):	
+        self._indent()
         self._write('try:')
         self._visit_body(node.body)
         if node.finalbody:
@@ -999,22 +999,23 @@ class IntegerToPower(ast.NodeTransformer):
 
     def visit_Num(self, node):
         num = node.n
-        if not isinstance(num, int):
+        if not (isinstance(num, int) or isinstance(num,long)):
             return node
         if num >= 10**5 and not math.log10(num) % 1:
-            power_10 = int(math.log10(num))
+            power_10 = int(math.log10(num))			
             return ast.BinOp(ast.Num(10), ast.Pow(), ast.Num(power_10))
-        elif num >= 2**17 and not math.log2(num) % 1:
-            power_2 = int(math.log2(num))
+        elif num >= 2**17 and not math.log(num,2) % 1:
+            power_2 = int(math.log(num,2))
             return ast.BinOp(ast.Num(2), ast.Pow(), ast.Num(power_2))
         else:
             return node
 
 
 safe_transforms = [CombineImports,
-                   #CombineWithStatements,
                    EliminateUnusedConstants,
                    IntegerToPower]
+                   #CombineWithStatements,
+
 
 
 class FunctionToLambda(ast.NodeTransformer):
