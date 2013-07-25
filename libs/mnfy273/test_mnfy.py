@@ -615,7 +615,16 @@ class SourceCodeEmissionTests(unittest.TestCase):
         elif isinstance(minified, ast.Name):
             assert minified.id == original.id
         elif isinstance(minified, ast.excepthandler):
-            assert minified.name == original.name
+            #print "min", minified, "ori:", original
+            ##print "min:",ast.dump(minified)
+            #print "ori:",ast.dump(original)
+            #import pdb
+            #pdb.set_trace()
+            if minified.name is not None:
+                assert minified.name.id == original.name.id
+                assert minified.name.ctx == original.name.ctx
+            else:
+                assert minified.name == original.name
         elif isinstance(minified, ast.arguments):
             assert minified.vararg == original.vararg
             assert minified.kwarg == original.kwarg

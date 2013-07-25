@@ -55,8 +55,10 @@ def hash(filepath):
 	printedFile = normalisePy(filepath)
 	#hash
 	
+	print(printedFile)
 	m = hashlib.sha512()
 	for line in printedFile:
+		
 		m.update(line.encode('utf-8'))
 	return m.hexdigest()
 	
@@ -120,7 +122,7 @@ def main():
 	
 	### TESTS ###
 	success = 0
-	total = 13
+	total = 14
 	success += assertTrueHash('emptyFile.py','emptyFile2.py',testDir);
 	success += assertTrueHash('helloworld.py','helloworld.py',testDir);
 	success += assertTrueHash('helloworld.py','helloworld2.py',testDir);
@@ -131,6 +133,7 @@ def main():
 	success += assertTrueHash('dictionary.py','dictionary2.py',testDir);
 	success += assertFalseHash('indent.py','indent2.py',testDir);
 	success += assertFalseHash('helloworld.py', 'emptyFile2.py', testDir);
+	success += assertFalseHash('helloworld4.py','helloworld5.py',testDir);
 	success += assertFalseHash('emptyFile.py', 'classesAndImports.py',testDir);
 	success += assertFalseHash('docstrings.py', 'docstrings2.py',testDir);	#Tests indiscriminate removal of docstrings
 	success += assertTrueHash('docstrings.py', 'docstrings3.py',testDir);		

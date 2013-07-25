@@ -29,25 +29,29 @@ source_total = 0
 minified_total = 0
 
 for filename in filenames:
-    with open(filename, 'rb') as file:
-        encoding = tokenize.detect_encoding(file.readline)[0]
-    with open(filename, 'r', encoding=encoding) as file:
+    #with open(filename, 'rb') as file:
+    #    encoding = tokenize.detect_encoding(file.readline)[0]
+    with open(filename, 'r') as file:
         source = file.read()
-    print('Verifying', filename, '... ', end='')
+    print 'Verifying', filename, '... ',
     try:
         minified_source = test_mnfy.SourceCodeEmissionTests.test_roundtrip(source)
     except:
-        print()
-        raise
-    source_size = len(source.strip().encode('utf-8'))
-    minified_size = len(minified_source.strip().encode('utf-8'))
-    if minified_size > source_size:
-        print()  # Easier to see what file failed
-        raise ValueError('minified source larger than original source; '
+        print "Failed"
+        #raise
+    try:	
+        source_size = len(source.strip().encode('utf-8'))
+        minified_size = len(minified_source.strip().encode('utf-8'))
+        if minified_size > source_size:
+            print  # Easier to see what file failed
+            raise ValueError('minified source larger than original source; '
                          '{} > {}'.format(minified_size, source_size))
-    source_total += source_size
-    minified_total += minified_size
-    print('{}% smaller'.format(100 - int(minified_size/source_size * 100)))
+        source_total += source_size
+        minified_total += minified_size
+        print '{0}% smaller'.format(100 - int(minified_size/float(source_size) * 100.0))
+
+    except UnicodeDecodeError:
+        print "Encoding Error; cant determine size"
 print('-' * 80)
 print('{:,} bytes minified vs. {:,} original bytes'.format(minified_total, source_total))
-print('{}% smaller overall'.format(100 - int(minified_total/source_total * 100)))
+print('{}% smaller overall'.format(100 - int(minified_total/float(source_total) * 100)))

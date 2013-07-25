@@ -31,7 +31,7 @@ _simple_nodes = {
 }
 
 _simple_stmts = (ast.Expr, ast.Delete, ast.Pass, ast.Import, ast.ImportFrom,
-                ast.Global, ast.Assert, ast.Break, ast.Continue,
+                ast.Global, ast.Assert, ast.Break, ast.Continue, ast.Exec,
                 ast.Return, ast.Raise, ast.Assign, ast.AugAssign, ast.Print)
 
 _precedence = {expr: level for level, expr_list in enumerate([
@@ -1098,5 +1098,8 @@ if __name__ == '__main__':  # pragma: no cover
             transformer = transform()
             source_ast = transformer.visit(source_ast)
     minifier = SourceCode()
+    import pdb
+    pdb.set_trace()
     minifier.visit(source_ast)
+
     print(str(minifier))
