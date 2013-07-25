@@ -412,23 +412,22 @@ class SourceCode(ast.NodeVisitor):
         self._write('del ')
         self._seq_visit(node.targets, ',')
 
-	def visit_Print(self,node):
-		"""print [expression ("," expression)* [","]]
-		or print >> expression [("," expression)+ [","]]
-		
-		print expr(list of expr) , 
-		print >> <loc> expr(list with atleast 1, comma seperated), 
-		
-		
-		"""
-		self._write('print ')
-		self._conditional_visit('>>',node.dest)
-		if (node.dest is not None) and (len(node.values)>0):
-			self._write(',')
-		self._seq_visit(node.values, ',')
-		if not node.nl:
-			self._write(',')
-		
+    def visit_Print(self,node):
+        """print [expression ("," expression)* [","]]
+        or print >> expression [("," expression)+ [","]]
+        print expr(list of expr) , 
+        print >> <loc> expr(list with atleast 1, comma seperated), 
+        
+        
+        """
+        self._write('print ')
+        self._conditional_visit('>>',node.dest)
+        if (node.dest is not None) and (len(node.values)>0):
+            self._write(',')
+        self._seq_visit(node.values, ',')
+        if not node.nl:
+            self._write(',')
+        
     def visit_Raise(self, node):
         self._write('raise')
         self._conditional_visit(' ', node.type)
@@ -569,15 +568,20 @@ class SourceCode(ast.NodeVisitor):
         """
 		#handle (argument ',')* (argument [','])
         self._write_args(node.args, node.defaults)
+        wrote = bool(node.args)
         #handle *name
         if node.vararg:
-        	self._write('*')
-        	self._write(node.vararg)
-        	#How do i know what vararg args* are??
+            if wrote:
+                self._write(',')
+            self._write('*')
+            self._write(node.vararg)
+            wrote = True
         #handle **name
         if node.kwarg:
-        	self._write('**')
-        	self._write(node.kwarg)
+            if wrote:
+                self._write(',')
+            self._write('**')
+            self._write(node.kwarg)
 
 
     def visit_Lambda(self, node):
@@ -587,7 +591,7 @@ class SourceCode(ast.NodeVisitor):
 
         """
         args = node.args
-        if args.args or args.vararg or args.kwonlyargs or args.kwarg:
+        if args.args or args.vararg or args.kwarg:
             self._visit_and_write('lambda ', args)
         else:
             self._write('lambda')
@@ -1030,8 +1034,8 @@ class FunctionToLambda(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
         """Return a lambda instead of a function if the body is only a Return
         node, there are no decorators, and no annotations."""
-        # Can't have decorators or a returns annotation.
-        if node.decorator_list or node.returns:
+        # Can't have decorators.
+        if node.decorator_list:
             return node
         # Body must be of length 1 and consist of a Return node;
         # can't translate a body consisting of only an Expr node as that would
@@ -1040,9 +1044,6 @@ class FunctionToLambda(ast.NodeTransformer):
         if len(node.body) > 1 or not isinstance(node.body[0], ast.Return):
             return node
         args = node.args
-        # No annotations for *args or **kwargs.
-        if args.varargannotation or args.kwargannotation:
-            return node
         # No annotations on any other parameters.
         if any(arg.annotation for arg in args.args):
             return node
@@ -1053,7 +1054,20 @@ class FunctionToLambda(ast.NodeTransformer):
         lambda_ = ast.Lambda(args, return_)
         return ast.Assign([ast.Name(node.name, ast.Store())], lambda_)
 
+def mnfytest(filename,safe_transforms):
+	
+    with open(filename, 'rb') as source_file:
+        source = source_file.read()
+    source_ast = ast.parse(source)
+    if safe_transforms:
+        for transform in safe_transforms:
+            transformer = transform()
+            source_ast = transformer.visit(source_ast)
+    minifier = SourceCode()
+    minifier.visit(source_ast)
+    print(str(minifier))
 
+		
 if __name__ == '__main__':  # pragma: no cover
     import argparse
 
