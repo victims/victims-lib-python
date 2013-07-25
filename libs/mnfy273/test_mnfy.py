@@ -304,29 +304,29 @@ class SourceCodeEmissionTests(unittest.TestCase):
                         defaults=[ast.Num(42)]),
                     'spam,eggs=42')
         self.verify(self.create_arguments(vararg='spam'), '*spam')
-        self.verify(self.create_arguments(vararg='spam',
-                        varargannotation=ast.Num(42)),
-                    '*spam:42')
-        self.verify(self.create_arguments(kwonlyargs=['spam']),
-                    '*,spam')
-        self.verify(self.create_arguments(kwonlyargs=['spam'],
-                        kw_defaults=[ast.Num(42)]),
-                    '*,spam=42')
-        self.verify(self.create_arguments(args=['spam'], kwonlyargs=['eggs']),
-                    'spam,*,eggs')
-        self.verify(self.create_arguments(vararg='spam', kwonlyargs=['eggs']),
-                    '*spam,eggs')
+        #self.verify(self.create_arguments(vararg='spam',
+        #                varargannotation=ast.Num(42)),
+        #            '*spam:42')
+        #self.verify(self.create_arguments(kwonlyargs=['spam']),
+        #            '*,spam')
+        #self.verify(self.create_arguments(kwonlyargs=['spam'],
+        #               kw_defaults=[ast.Num(42)]),
+        #           '*,spam=42')
+        #self.verify(self.create_arguments(args=['spam'], kwonlyargs=['eggs']),
+        #            'spam,*,eggs')
+        #self.verify(self.create_arguments(vararg='spam', kwonlyargs=['eggs']),
+        #            '*spam,eggs')
         self.verify(self.create_arguments(kwarg='spam'), '**spam')
         self.verify(self.create_arguments(args=['spam'], vararg='eggs'),
                     'spam,*eggs')
-        self.verify(self.create_arguments(args=['spam'], vararg='eggs',
-                                          kwonlyargs=['bacon']),
-                    'spam,*eggs,bacon')
+        #self.verify(self.create_arguments(args=['spam'], vararg='eggs',
+        #                                  kwonlyargs=['bacon']),
+        #            'spam,*eggs,bacon')
         self.verify(self.create_arguments(args=['spam'], kwarg='eggs'),
                     'spam,**eggs')
-        self.verify(self.create_arguments(kwonlyargs=['spam', 'eggs', 'bacon'],
-                                          kw_defaults=[None, ast.Num(42), None]),
-                    '*,spam,eggs=42,bacon')
+        #self.verify(self.create_arguments(kwonlyargs=['spam', 'eggs', 'bacon'],
+        #                                  kw_defaults=[None, ast.Num(42), None]),
+        #            '*,spam,eggs=42,bacon')
 
     def test_Lambda(self):
         self.verify(ast.Lambda(self.create_arguments(), ast.Num(42)),

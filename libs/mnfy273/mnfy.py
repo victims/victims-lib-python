@@ -973,7 +973,7 @@ class EliminateUnusedConstants(ast.NodeTransformer):
     def visit_TryExcept(self, node):
         #"""Keep 'except' clauses as they suppress exceptions, but remove any
         #other clauses that end up being empty."""
-	""" Try replace ment not ported yet.    
+        """ Try replace ment not ported yet.    
 		if len(node.handlers) > 0:
             node = self._visit_body(node)
         else:
@@ -987,9 +987,8 @@ class EliminateUnusedConstants(ast.NodeTransformer):
         if all(len(getattr(node, x)) == 0 for x in ast.Try._fields):
             return None
         return node
-    """
+        """
         return node
-
 class IntegerToPower(ast.NodeTransformer):
 
     """Transform integers of a large enough size to a power of 2 or 10.
