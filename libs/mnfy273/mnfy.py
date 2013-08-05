@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
-"""Minify Python source code."""
+"""Minify Python source code.
+Originally written for Python3.3 by Brett Cannon, ported to Python 2.7 by Dulitha Ranatunga"""
 import ast
 import contextlib
 import functools
@@ -1098,8 +1099,6 @@ if __name__ == '__main__':  # pragma: no cover
             transformer = transform()
             source_ast = transformer.visit(source_ast)
     minifier = SourceCode()
-    import pdb
-    pdb.set_trace()
     minifier.visit(source_ast)
 
     print(str(minifier))

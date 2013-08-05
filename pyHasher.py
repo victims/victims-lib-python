@@ -1,7 +1,56 @@
+"""
+Normalises and hashes python files using mnfy.
+Author: Dulitha Ranatunga, Last Modified: August, 2013.
+"""
+
 import sys
 import ast
 import hashlib
+import subprocess
 
+###CONFIG###
+"""
+Set the environment name of your system here. e.g.
+if typing 'python hello.py' runs 'hello.py' in Python2.7 then, PY27_ENV_NAME='python'
+if typing 'python3 hello.py' runs 'hello.py' in Python3.3 then,
+PY33_ENV_NAME='python3'
+"""
+
+PY27_ENV_NAME='python'
+PY33_ENV_NAME='python3'
+#############
+
+def runInEnv(version,filepath):
+	"""
+	Opens up a subprocess and executes mnfy in a different python environment.
+	Input:
+		- version - python environment to run [2 or 3]
+		- filepath - file to be normalised
+	Output: (success,minifiedFile) where
+		- success - 1 if the subproccess returned without error, else 0
+		- minifiedFile - stdout of running mnfy on file.
+	"""
+	#print("Running " + filepath + " in env:"+str(version))
+	if version == 2:
+		env= PY27_ENV_NAME
+		mnfypath='libs/mnfy273/mnfy.py'
+	elif version == 3:
+		env= PY33_ENV_NAME
+		mnfypath='libs/mnfy3300/mnfy.py'
+	else:
+		return (0,None)
+	# Put stderr and stdout into pipes
+	proc = subprocess.Popen([env,mnfypath,filepath,"--safe-transforms"], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+	return_code = proc.wait()
+	# Read from pipes
+	if return_code:
+		return (0,None)
+	else:
+		file=""
+		for line in proc.stdout:
+			file += line.decode("utf-8")
+		return(1,file[:-1])	
+	
 
 def mnfy3(filepath):
 	"""Calls the mnfy3.3 module to normalise a python 3.x file
@@ -48,8 +97,8 @@ def mnfyFailSafe(filepath):
 	Output: 
 		String: white-space and comment removed source of filepath.
 	"""
-	from libs.mnfyFailSafe.mnfy import commentStripper
-	return commentStripper(filepath)
+	from libs.mnfyFailSafe.mnfy import stripFile
+	return stripFile(filepath)
 
 def normalisePy(filepath):
 	"""
@@ -66,23 +115,30 @@ def normalisePy(filepath):
 	#minify the python file	
 	minifier = "";
 	if sys.version_info.major == 3:
-		#try 3, then failsafe
+		#try 3, then 2, then failsafe
 		try:
 			minifier= mnfy3(filepath);
+			
 		except:
-			minifier = mnfyFailSafe(filepath)
+			success,minifier = runInEnv(2,filepath)
+			if not success:
+				minifier = mnfyFailSafe(filepath)
 				
 		
 	elif sys.version_info.major == 2:
-		#try 3, then failsafe
+		import pdb
+		
+		#try 2, then 3, then failsafe
 		try:
 			minifier= mnfy2(filepath);
 		except:		
-			minifier = mnfyFailSafe(filepath)
+			success,minifier = runInEnv(3,filepath)
+			if not success:
+				minifier = mnfyFailSafe(filepath)
+
 	else:
 		minifier = mnfyFailSafe(filepath)
 	#Final source file
-	minifier = mnfyFailSafe(filepath)
 	return (str(minifier))
 
 def hash(filepath):
@@ -106,102 +162,23 @@ def hash(filepath):
 	return m.hexdigest()
 	
 	
-def assertTrueHash(f1,f2, test_dir=""):
-	""" hashes two python files and checks if they are equivalent
-	Input:
-		test_dir is a prefix folder path to the file if they are both
-		in the same folder
-	Output:
-		returns 1 if they are the same
-	"""
-	f1 = test_dir + "/" + f1;
-	f2 = test_dir + "/" + f2;
-	
-	if hash(f1) == hash(f2):
-		print('assertTrue PASS: ', f1, " == " , f2)
-		return 1
-	else:
-		minifier = mnfyFailSafe(f1)
-		f1=open(f1+"-dump","w")
-		f1.write(minifier)
-		f1.close()
-		minifier = mnfyFailSafe(f2)
-		f2=open(f2+"-dump","w")
-		f2.write(minifier)
-		f2.close()
-
-		print('assertTrue FAIL: ', f1, " != ", f2)		
-		return 0
-
-def assertFalseHash(f1,f2, test_dir=""):
-	""" hashes two python files and checks if they are equivalent
-	Input:
-		test_dir is a prefix folder path to the file if they are both
-		in the same folder
-	Output:
-		returns 1 if they are not the same
-	"""
-	if not test_dir == "":
-		f1 = test_dir + "/" + f1;
-		f2 = test_dir + "/" + f2;
-		
-	if hash(f1) != hash(f2):
-		print('assertFalse PASS: ', f1, " != " , f2)
-		return 1
-	else:
-		minifier = mnfyFailSafe(f1)
-		f1=open(f1+"-dump","w")
-		f1.write(minifier)
-		f1.close()
-		minifier = mnfyFailSafe(f2)
-		f2=open(f2+"-dump","w")
-		f2.write(minifier)
-		f2.close()
-		print('assertFalse FAIL: ', f1, " == ", f2,)
-		return 0
-		
-		
 def main():
-	#Determine version number:
-	#python3: Minimum 3.3 is required.
-	#python2.x: Needs to be run from Python 2.7
-	testDir = 'test_cases'+"/"+"3.x tests";
-	"""
-	if sys.version_info.major == 3:
-		if sys.version_info.minor >= 3:
-			testDir = testDir + "/" + "3.x tests"
-		else:
-			print ("Python version found: ", sys.version_info.major,".", sys.version_info.minor)
-			print("Python version >= 3.3 or Python 2.7 required to run, input files do not need to be under this requirement")
-			return -1;
-	elif sys.version_info.major == 2:
-		if sys.version_info.minor >= 7:
-			testDir = testDir + "/" + "2.x tests"
-		else:
-			print("Python version >= 3.3 or Python 2.7 required to run, input files do not need to be under this requirement")
-			return -1;
+	#Run tests
+	import argparse
+	arg_parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+	arg_parser.add_argument('filename',
+							help='path to Python source file')
+	arg_parser.add_argument('--dump', action='store_true',
+                            default=False,
+							help='toggle printing of source')						
+	args = arg_parser.parse_args()
 	
-	"""
-	### TESTS ###
-	success = 0
-	total = 15
-	success += assertTrueHash('emptyFile.py','emptyFile2.py',testDir);
-	success += assertTrueHash('helloworld.py','helloworld.py',testDir);
-	success += assertTrueHash('helloworld.py','helloworld2.py',testDir);
-	success += assertTrueHash('helloworld.py','helloworld3.py',testDir);
-	success += assertTrueHash('helloworld.py','helloworld4.py',testDir);
-	success += assertTrueHash('helloworld3.py','helloworld4.py',testDir);
-	success += assertTrueHash('classesAndImports.py','classesAndImports2.py',testDir);
-	success += assertTrueHash('dictionary.py','dictionary2.py',testDir);
-	success += assertFalseHash('indent.py','indent2.py',testDir);
-	success += assertFalseHash('helloworld.py', 'emptyFile2.py', testDir);
-	success += assertFalseHash('helloworld4.py','helloworld5.py',testDir);
-	success += assertFalseHash('emptyFile.py', 'classesAndImports.py',testDir);
-	success += assertFalseHash('docstrings.py', 'docstrings2.py',testDir);	#Tests indiscriminate removal of docstrings
-	success += assertTrueHash('docstrings.py', 'docstrings3.py',testDir);	
-	success += assertTrueHash('docstrings.py', 'docstrings4.py',testDir);		
-	print("Simple whitebox testing: ",success," out of ",total, " passed.", total-success," failed")	; 
+	print(hash(args.filename))
+	if (args.dump):
+		print(normalisePy(args.filename))
 
+
+	
 	
 if __name__ == '__main__':
 	main()

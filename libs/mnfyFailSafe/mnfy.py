@@ -1,3 +1,8 @@
+"""
+A very basic minifier of python code.
+Author: Dulitha Ranatunga, Last Modified: August 2013
+"""
+
 def removeOneLineDocStrings(line):
 	"""Removes one line docstrings such as this one"""
 	"""
@@ -26,7 +31,7 @@ def replaceTabsWithSpaces(line,numSpaces=3):
 	return line[:index].expandtabs(numSpaces)+line[index:]
 	
 
-def commentStripper(filepath):
+def stripFile(filepath):
 	"""Given a sourcecode file, this will:
 		-Remove one line docstrings
 		-Replace indentation-tabs with spaces
@@ -47,15 +52,19 @@ def commentStripper(filepath):
 		line = line.rstrip() #remove white space
 		if len(line) > 0 and not line.isspace():
 			newSource += line + "\n"
-			
 	return newSource
 	
 def main():
 	#Run tests
-	with open(filepath,'rb') as source_file:
-		source = source_file.read()
-	for line in commentStripper(source):
-		print(line)
+	import argparse
+	arg_parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+	arg_parser.add_argument('filename',
+							help='path to Python source file')
+	args = arg_parser.parse_args()
+	
+	print(stripFile(args.filename))
+
+
 	
 	
 if __name__ == '__main__':
