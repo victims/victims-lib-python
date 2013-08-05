@@ -6,7 +6,7 @@ class HelloWorldGenerator():
 		print("HelloWorld")
 		self.str = "Hello World"
 	
-	def sayHello(self):
+	def sayHello(self,string:'wow_an_annotation'):
 		print(self.str)
 
 def main():

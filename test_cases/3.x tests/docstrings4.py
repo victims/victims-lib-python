@@ -2,7 +2,6 @@
 referenced strings like this one should not be deleted"""
 
 class testobject:
-	"""this docstring is not going to be referenced, so it should be remove"""
 	def __init__(self,x:"annotationtoforcepy3"):
 		"""doc strings can
 		be
