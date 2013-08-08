@@ -534,10 +534,6 @@ class SourceCode(ast.NodeVisitor):
     def visit_Subscript(self, node):
         self._visit_and_write(node.value, '[', node.slice, ']')
 
-    def visit_arg(self, node):
-        self._write(node.arg)
-        self._conditional_visit(':', node.annotation)
-
     def _write_args(self, args, defaults):
         """Write out an arguments node's positional and default arguments."""
         slice_bound = -len(defaults) or len(args)
@@ -646,10 +642,6 @@ class SourceCode(ast.NodeVisitor):
     # Not ``visit_Global = global_nonlocal_visit`` for benefit of decorators.
     def visit_Global(self, node):
         self._global_nonlocal_visit(node)
-
-    # Not ``visit_Nonlocal = global_nonlocal_visit`` for benefit of decorators.
-    #def visit_Nonlocal(self, node):
-    #    self._global_nonlocal_visit(node)
 
     def visit_Import(self, node):
         """
@@ -908,29 +900,6 @@ class CombineImports(ast.NodeTransformer):
 		
 
 
-class CombineWithStatements(ast.NodeTransformer):
-
-    """Nest 'with' statements.
-
-    with A:
-        with B:
-            pass
-
-    with A,B:
-        pass  # savings: 4 per additional statement
-
-		
-	NOT USED IN 2.7 BECAUSE WITH STATEMENTS ONLY CONTAIN ONE EXPRESSION
-    """
-
-    def visit_With(self, node):
-        self.generic_visit(node)
-        if len(node.body) == 1 and isinstance(node.body[0], ast.With):
-            child_with = node.body[0]
-            node.items.extend(child_with.items)
-            node.body = child_with.body
-        return node
-
 
 class EliminateUnusedConstants(ast.NodeTransformer):
 
@@ -1015,7 +984,6 @@ class IntegerToPower(ast.NodeTransformer):
 safe_transforms = [CombineImports,
                    EliminateUnusedConstants,
                    IntegerToPower]
-                   #CombineWithStatements,
 
 
 
