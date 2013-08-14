@@ -1,14 +1,7 @@
-``mnfy`` -- minify/obfuscate Python 3 source code
+``mnfy`` -- minify/obfuscate Python 2 source code
 =================================================
 
 .. contents::
-
-Web Pages
----------
-
-* `Documentation <http://mnfy.rtfd.org>`__
-* `Project site <http://mnfy.googlecode.com>`__
-* `PyPI/Cheeseshop <http://pypi.python.org/pypi/mnfy>`__
 
 What the heck is mnfy for?
 --------------------------
@@ -39,15 +32,6 @@ smaller with just `source emission`_ minification).
 Usage
 =====
 
-A note about version numbers and Python version compatibility
--------------------------------------------------------------
-
-The version number for mnfy is `PEP 386`_ compliant, taking the form of
-``PPP.FFF.BBB``. The ``FFF.BBB`` represents the feature and bugfix version
-numbers of mnfy itself. The ``PPP`` portion of the version number represents the
-Python version that mnfy is compatible with:
-``'{}{}'.format(*sys.version_info[:2])``.
-
 The Python version that mnfy is compatible with is directly embedded in the version
 number as Python's AST is not guaranteed to be backwards-compatible. This means
 that you should use each version of mnfy with specific version of Python.
@@ -70,8 +54,8 @@ to varying degrees, use some flags.
 
 See the help message for the project for full instructions on usage::
 
-  python3 -m mnfy -h
-  python3 mnfy.py -h
+  python2 -m mnfy -h
+  python2 mnfy.py -h
 
 .. END README
 
@@ -134,21 +118,6 @@ to::
   from X import y,z  # 17 characters
 
 
-Combine ``with`` statements
-+++++++++++++++++++++++++++
-
-As of Python 3.2, `contextlib.nested()`_ is essentially syntactically supported.
-
-From::
-
-  with A:
-   with B:pass
-
-to::
-
-  with A,B:pass
-
-
 Eliminate unused constants
 ++++++++++++++++++++++++++
 
@@ -191,48 +160,10 @@ to::
 
   2**32
 
-
-Sane transformations 
-------------------------------------------------
-
-For typical code, sane transformations should be fine (e.g. you are not
-introspecting local variables). Since these transformations are typically safe
-you can turn them all on with a single option, but they can also be switched on
-individually as desired.
-
-.. note::
-    Currently there are no sane transformations defined. See the
-    `issue tracker`_ for some proposed transformations.
-
 Unsafe transformations
 ------------------------------------------
-
-For the more adventurous who know what features of Python their code relies on,
-unsafe transformations can be used. Just be very aware of what your code depends
-on before using any specific transformation. For this reason each unsafe
-transformation must be switched on individually.
-
+This is a mnfy3/python3 feature not ported to python2.
 
 Function to lambda
 ++++++++++++++++++
-
-This is unsafe as lambda functions are not exactly like a function (e.g.
-lambda functions do not have a ``__name__`` attribute).
-
-From::
-
-  def identity(x):return x
-
-to::
-
-  x=lambda x:x
-
-
-
-.. _Jython: http://www.jython.org
-.. _IronPython: http://ironpython.net/
-.. _Meta: http://pypi.python.org/pypi/meta
-.. _PEP 386: http://python.org/dev/peps/pep-0386/
-.. _contextlib.nested(): http://docs.python.org/2.7/library/contextlib.html#contextlib.nested
-.. _math module: http://docs.python.org/3/library/math.html
-.. _issue tracker: https://code.google.com/p/mnfy/issues/list
+This is a mnfy3/python3 feature not ported to python2.

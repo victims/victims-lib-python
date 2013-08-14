@@ -52,6 +52,8 @@ def stripFile(filepath):
 		line = line.rstrip() #remove white space
 		if len(line) > 0 and not line.isspace():
 			newSource += line + "\n"
+	if len(newSource)> 0 and newSource[-1] == '\n':
+		return newSource[:-1]
 	return newSource
 	
 def main():
