@@ -75,18 +75,3 @@ class TestMnfy(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
-"""
-if __name__ == "__main__":
-	totalTests = 9
-	totalSuccess = 0
-	totalSuccess += verify(testEmptyDocstring)
-	totalSuccess += verify(testOneLineDocstring)
-	totalSuccess += verify(testMultiLineDocstring)
-	totalSuccess += verify(testEmptyTabReplacement)
-	totalSuccess += verify(testSpacesTabReplacement)
-	totalSuccess += verify(testTabReplacement)
-	totalSuccess += verify(testEmptyStripFile)
-	totalSuccess += verify(testOneLineStripFile)
-	totalSuccess += verify(testMultiLineStripFile)
-	print(str(totalSuccess) + " out of " + str(totalTests) + " passed.")
-"""	
