@@ -40,7 +40,7 @@ def stripFile(filepath):
 	Input:
 		filepath - file to be stripped
 	Output:
-		[lines] - with whitespace and comments removed
+		a single string containing the entire transformed source code
 	"""
 	with open(filepath,'r') as source_file:
 		source = source_file.readlines()
