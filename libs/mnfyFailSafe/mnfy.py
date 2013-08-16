@@ -57,7 +57,6 @@ def stripFile(filepath):
 	return newSource
 	
 def main():
-	#Run tests
 	import argparse
 	arg_parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	arg_parser.add_argument('filename',
