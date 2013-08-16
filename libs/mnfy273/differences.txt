@@ -1,0 +1,45 @@
+
+ 
+ 2.7 has TryExcept
+ 2.7 has TryFinally
+ 
+ 2.7 has Exec
+ 3.3 has Nonlocal
+ 
+ 3.3 has YieldFrom
+ 
+ 2.7 has Repr
+ 3.3 has Starred
+ 3.3 has Bytes
+
+ 
+ 
+ 2.7 excepthandler uses expr, 3.3 uses identifier
+
+ Should be fixed:
+ 
+ +3.3 uses 'withitem'
+ + 3.3 stmt has returns
+ +3.3 has Class DEF [14]
+ +2.7 has print [28] -> Maybe?
+ +31/34: "WITH" ???
+ +2.7 has different Raise
+ 
+ Maybe fixed??:
+	 2.7/3.3 arguments are different  
+	  3.3 uses 'arg'
+	 Common to both: vararg,kwarg,defaults , ARGS is different but common
+
+Unknown:	 
+	3.3 has Elipsis as expr 
+	2.7 slice [94] has Ellipsis|
+
+	 
+
+ 
+ -------
+ latest repo of asdl has NameConstant and singletons
+ YieldFrom (expr? -> expr)
+ Different args/arg
+ 
+ 
